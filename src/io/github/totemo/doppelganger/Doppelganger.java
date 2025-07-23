@@ -3,9 +3,11 @@ package io.github.totemo.doppelganger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -246,7 +248,7 @@ public class Doppelganger extends JavaPlugin implements Listener {
      * @param loc the Location on the ground where the creature will spawn.
      * @return the spawned LivingEntity, or null if it could not be spawned.
      */
-    public LivingEntity spawnDoppelganger(String creatureType, String name, Location loc) {
+    public CompletableFuture<LivingEntity> spawnDoppelganger(String creatureType, String name, Location loc) {
         return _creatureFactory.spawnCreature(creatureType, loc, name, this);
     }
 
@@ -289,17 +291,20 @@ public class Doppelganger extends JavaPlugin implements Listener {
         // TODO: allow a customisable offset above the computed ground position.
 
         // The doppelganger mob.
-        LivingEntity doppelganger = spawnDoppelganger(creatureType, doppelgangerName, groundLocation);
-        if (doppelganger == null) {
-            // If the creature type is invalid, it is a configuration error. The
-            // shape items are already lost. Since
-            // Configuration.isValidCreatureType() was called prior to entering
-            // doDoppelganger(), this shouldn't happen.
-            getLogger().severe("Could not spawn " + creatureType);
-        } else if (doppelganger instanceof Creature) {
-            // If we can, make the doppelganger the players *problem*.
-            ((Creature) doppelganger).setTarget(event.getPlayer());
-        }
+        spawnDoppelganger(creatureType, doppelgangerName, groundLocation).thenAccept(doppelganger -> {
+            Bukkit.getScheduler().runTask(this, () -> {
+                if (doppelganger == null) {
+                    // If the creature type is invalid, it is a configuration error. The
+                    // shape items are already lost. Since
+                    // Configuration.isValidCreatureType() was called prior to entering
+                    // doDoppelganger(), this shouldn't happen.
+                    getLogger().severe("Could not spawn " + creatureType);
+                } else if (doppelganger instanceof Creature) {
+                    // If we can, make the doppelganger the players *problem*.
+                    ((Creature) doppelganger).setTarget(event.getPlayer());
+                }
+            });
+        });
     } // doDoppelganger
 
     // ------------------------------------------------------------------------

@@ -4,8 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -18,11 +22,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
 // ----------------------------------------------------------------------------
+
 /**
  * Manages known creature types and creates them on demand.
  */
 public class CreatureFactory {
     // ------------------------------------------------------------------------
+
     /**
      * Return the type name of the specified LivingEntity.
      *
@@ -34,10 +40,11 @@ public class CreatureFactory {
     }
 
     // ------------------------------------------------------------------------
+
     /**
      * Load the creature shapes and types from the configuration file.
      *
-     * @param root the root of the configuration hierarchy.
+     * @param root   the root of the configuration hierarchy.
      * @param logger the Logger.
      */
     public void load(ConfigurationSection root, Logger logger) {
@@ -81,7 +88,7 @@ public class CreatureFactory {
                             _types.put(creatureName.toLowerCase(), type);
                         } else {
                             logger.warning("Can't define creature " + type.getName() +
-                                           " because we can't spawn a " + type.getCreatureType());
+                                    " because we can't spawn a " + type.getCreatureType());
                         }
                     }
                 }
@@ -102,7 +109,7 @@ public class CreatureFactory {
                     String spawn = player.getString("spawn", playerName);
                     if (!isValidCreatureType(spawn)) {
                         logger.warning("Can't define player " + playerName +
-                                       " because there is no creature type named " + spawn);
+                                " because there is no creature type named " + spawn);
                     } else {
                         List<String> shapeNameList = player.getStringList("shapes");
                         ArrayList<CreatureShape> shapes = new ArrayList<CreatureShape>();
@@ -111,7 +118,7 @@ public class CreatureFactory {
                                 CreatureShape shape = getCreatureShape(shapeName);
                                 if (shape == null) {
                                     logger.warning("Player " + playerName +
-                                                   " references undefined shape " + shapeName);
+                                            " references undefined shape " + shapeName);
                                 } else {
                                     shapes.add(shape);
                                 }
@@ -119,7 +126,7 @@ public class CreatureFactory {
 
                             if (shapes.size() == 0) {
                                 logger.warning("Player " + playerName +
-                                               " can only be spawned by command because no shapes have been listed.");
+                                        " can only be spawned by command because no shapes have been listed.");
                             }
                             _playerShapes.put(playerName.toLowerCase(), shapes);
                             _playerCreatures.put(playerName.toLowerCase(), spawn);
@@ -131,6 +138,7 @@ public class CreatureFactory {
     } // load
 
     // ------------------------------------------------------------------------
+
     /**
      * Print a human-readable list of the configured shapes, creature types and
      * player-name-specific creatures to the command sender.
@@ -170,31 +178,33 @@ public class CreatureFactory {
     } // listConfiguration
 
     // ------------------------------------------------------------------------
+
     /**
      * Return the {@link CreatureShape} with the specified name in the
      * configuration, or null if not found.
      *
      * @param name the case insensitive shape name.
      * @return the {@link CreatureShape} with the specified name in the
-     *         configuration, or null if not found.
+     * configuration, or null if not found.
      */
     public CreatureShape getCreatureShape(String name) {
         return _shapes.get(name.toLowerCase());
     }
 
     // ------------------------------------------------------------------------
+
     /**
      * Return the {@link CreatureShape} representing the shape used to summon a
      * creature by placing the specified item.
-     *
+     * <p>
      * The placed item must be named (by an anvil) and the shape and type of the
      * blocks around it must match one of those specified in the configuration.
      *
-     * @param loc the location where the triggering item is placed.
+     * @param loc        the location where the triggering item is placed.
      * @param placedItem the item to be tested as a trigger of creature
-     *        summoning.
+     *                   summoning.
      * @return the {@link CreatureShape} of the creature that would be created,
-     *         or null if no creature would be created.
+     * or null if no creature would be created.
      */
     public CreatureShape getCreatureShape(Location loc, ItemStack placedItem) {
         // Linear search probably doesn't matter. How often do you place
@@ -208,10 +218,11 @@ public class CreatureFactory {
     }
 
     // ------------------------------------------------------------------------
+
     /**
      * Return the CreatureType identified by the specified name, or null if not
      * found.
-     *
+     * <p>
      * Note that default Minecraft creatures, or the custom creatures defined by
      * the PredefinedCreature enum will not have a corresponding CreatureType
      * instance. The purpose of the CreatureType instance is to apply overrides
@@ -219,40 +230,43 @@ public class CreatureFactory {
      *
      * @param name the case-insensitive creature type name.
      * @return the CreatureType identified by the specified name, or null if not
-     *         found.
+     * found.
      */
     public CreatureType getCreatureType(String name) {
         return _types.get(name.toLowerCase());
     }
 
     // ------------------------------------------------------------------------
+
     /**
      * Return the specific creature type that will be spawned when the named
      * player is summoned.
      *
      * @param playerName the name of the player whose custom creature type name
-     *        will be returned.
+     *                   will be returned.
      * @return the specific creature type that will be spawned when the named
-     *         player is summoned; guaranteed non-null.
+     * player is summoned; guaranteed non-null.
      */
     public String getPlayerCreature(String playerName) {
         return _playerCreatures.get(playerName.toLowerCase());
     }
 
     // ------------------------------------------------------------------------
+
     /**
      * Return the specific shapes that can summon the specified player.
      *
      * @param playerName the name of the player for whom summoning shapes will
-     *        be returned.
+     *                   be returned.
      * @return the specific shapes that can summon the specified player; or null
-     *         if not set.
+     * if not set.
      */
     public ArrayList<CreatureShape> getPlayerShapes(String playerName) {
         return _playerShapes.get(playerName.toLowerCase());
     }
 
     // ------------------------------------------------------------------------
+
     /**
      * Return true if the specified name signifies a vanilla Minecraft creature
      * (as in known to EntityType) or one of the custom values defined by
@@ -260,7 +274,7 @@ public class CreatureFactory {
      *
      * @param name the case-insensitive creature type.
      * @return true if the creature type is "vanilla", as opposed to defined in
-     *         the Doppelganger configuration file.
+     * the Doppelganger configuration file.
      */
 
     public static boolean isVanillaCreatureType(String name) {
@@ -268,17 +282,18 @@ public class CreatureFactory {
     }
 
     // ------------------------------------------------------------------------
+
     /**
      * Return true if the specified creature is a valid EntityType value or a
      * supported custom creature name.
      *
      * @param creatureType the case-insensitive custom or vanilla creature type.
      * @return true if the specified living entity is a valid EntityType value
-     *         or a supported custom creature name.
+     * or a supported custom creature name.
      */
     public boolean isValidCreatureType(String creatureType) {
         if (getCreatureType(creatureType) != null ||
-            PredefinedCreature.fromName(creatureType) != null) {
+                PredefinedCreature.fromName(creatureType) != null) {
             return true;
         } else {
             EntityType entityType = EntityType.fromName(creatureType);
@@ -287,12 +302,47 @@ public class CreatureFactory {
     }
 
     // ------------------------------------------------------------------------
+
     /**
      * Spawn a living entity of the specified type.
      *
+     * This is the method that should be called for all creature spawning as it
+     * handles the asynchronous nature of the methods it calls.
+     *
+     * @param creatureType the EntityType.getName() value specifying the
+     *                     creature type; case-insensitive, or PredefinedCreature.name().
+     *                     Null or the empty string will result in no spawned creature.
+     * @param loc          the spawn location (block above ground level).
+     * @param name         the custom name to assign and display; if null/empty, the
+     *                     default name from the creature type is used.
+     * @param plugin       the Plugin, used to schedule future events for special
+     *                     effects.
+     * @return the spawned LivingEntity, or null if nothing was spawned.
+     */
+    public CompletableFuture<LivingEntity> spawnCreature(String creatureType, Location loc, String name, Doppelganger plugin) {
+        CompletableFuture<LivingEntity> future = new CompletableFuture<>();
+
+        // Schedule the spawn operation on the main thread
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            try {
+                LivingEntity result = spawnCreatureSync(creatureType, loc, name, plugin);
+                future.complete(result);
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+            }
+        });
+
+        return future;
+    } // spawnCreature
+
+    // ------------------------------------------------------------------------
+
+    /**
+     * Spawn a living entity of the specified type.
+     * <p>
      * This method originally returned a Creature, but Bats are Ambient mobs.
      * The next common base class is LivingEntity.
-     *
+     * <p>
      * If the creature type has a mask, then the creature will wear that
      * player's head, irrespective of the creature's name. If a name is not
      * specified, then the default name from the configuration will be used. If
@@ -300,17 +350,16 @@ public class CreatureFactory {
      * the name plate will be displayed.
      *
      * @param creatureType the EntityType.getName() value specifying the
-     *        creature type; case-insensitive, or PredefinedCreature.name().
-     *        Null or the empty string will result in no spawned creature.
-     * @param loc the spawn location (block above ground level).
-     * @param name the custom name to assign and display; if null/empty, the
-     *        default name from the creature type is used.
-     * @param plugin the Plugin, used to schedule future events for special
-     *        effects.
+     *                     creature type; case-insensitive, or PredefinedCreature.name().
+     *                     Null or the empty string will result in no spawned creature.
+     * @param loc          the spawn location (block above ground level).
+     * @param name         the custom name to assign and display; if null/empty, the
+     *                     default name from the creature type is used.
+     * @param plugin       the Plugin, used to schedule future events for special
+     *                     effects.
      * @return the spawned LivingEntity, or null if nothing was spawned.
      */
-    protected LivingEntity spawnCreature(String creatureType, Location loc, String name, Doppelganger plugin) {
-        // Spawn the entity.
+    private LivingEntity spawnCreatureSync(String creatureType, Location loc, String name, Doppelganger plugin) {
         LivingEntity livingEntity = null;
 
         CreatureType type = getCreatureType(creatureType);
@@ -320,14 +369,17 @@ public class CreatureFactory {
 
             // The creature is recursively defined in terms of spawning another
             // creature and customising that.
-            livingEntity = spawnCreature(type.getCreatureType(), loc, null, plugin);
+            livingEntity = spawnCreatureSync(type.getCreatureType(), loc, null, plugin);
+
             if (livingEntity != null) {
                 type.customise(livingEntity);
 
-                // Spawn the mount if possible.
+                // Spawn the mount if possible
                 if (type.getMount() != null && isValidCreatureType(type.getMount())) {
-                    LivingEntity mount = spawnCreature(type.getMount(), loc, null, plugin);
-                    mount.setPassenger(livingEntity);
+                    LivingEntity mount = spawnCreatureSync(type.getMount(), loc, null, plugin);
+                    if (mount != null) {
+                        mount.setPassenger(livingEntity);
+                    }
                 }
             }
         } else {
@@ -351,63 +403,73 @@ public class CreatureFactory {
 
         // Whether a special type or not, name it.
         if (livingEntity != null) {
-            // Use the configured default name if no name is specified.
             String usedName = ((name == null || name.length() == 0) && type != null)
-                                                                                     ? type.getDefaultName() : name;
+                    ? type.getDefaultName() : name;
             if (usedName != null && usedName.length() != 0) {
-                // TODO: Allow custom prefix and/or suffix.
-                // TODO: Possibly allow prefix/suffix to indicate creator/owner
-                // of creature.
                 livingEntity.setCustomName(usedName);
                 livingEntity.setCustomNameVisible(true);
             }
 
-            // Make the doppelganger wear the player head or type-specific mask,
-            // unless blocked by the keephelmet setting.
+            // Apply player head (this needs to be async due to profile completion)
             if (type == null || !type.getKeepHelmet()) {
                 String playerNameOfHead = (type != null && type.getMask() != null)
-                                                                                   ? type.getMask() : usedName;
+                        ? type.getMask() : usedName;
                 if (playerNameOfHead != null && playerNameOfHead.length() != 0) {
-                    setPlayerHead(livingEntity, playerNameOfHead);
+                    applyPlayerHeadAsync(livingEntity, playerNameOfHead, plugin);
                 }
             }
+
+            // Players should not be able to get a doppelganger's head (or other
+            // gear) just by dropping items near it.
+            livingEntity.setCanPickupItems(false);
         }
 
-        // Players should not be able to get a doppelganger's head (or other
-        // gear) just by dropping items near it.
-        livingEntity.setCanPickupItems(false);
         return livingEntity;
-    } // spawnCreature
+    } // spawnCreatureSync
 
     // ------------------------------------------------------------------------
+
     /**
-     * Ensure that the doppelganger is wearing the specified player's head.
+     * Used to put the player head on the entity being spawned. This method is asynchronous
+     * due to updates Spigot made to how player heads are handled.
      *
-     * If the creature was configured to be wearing a skull as a helmet,
-     * customise that skull item so that settings from the configuration are
-     * retained.
-     *
-     * @param doppelganger the creature.
-     * @param name the name of the player whose head will be worn.
+     * @param entity The entity having the head put on them.
+     * @param playerName The name of the player whose head will be put on the entity.
+     * @param plugin The object representation of the plugin.
      */
-    protected static void setPlayerHead(LivingEntity doppelganger, String name) {
-        ItemStack helmet = doppelganger.getEquipment().getHelmet();
+    private void applyPlayerHeadAsync(LivingEntity entity, String playerName, Doppelganger plugin) {
+        ItemStack helmet = entity.getEquipment().getHelmet();
         if (helmet == null || helmet.getType() != Material.PLAYER_HEAD) {
             helmet = new ItemStack(Material.PLAYER_HEAD, 1);
         }
 
-        SkullMeta meta = (SkullMeta) helmet.getItemMeta();
-        meta.setOwner(name);
-        helmet.setItemMeta(meta);
-        // Player heads are damage value 3.
-        helmet.setDurability((short) 3);
-        doppelganger.getEquipment().setHelmet(helmet);
-    } // setPlayerHead
+        final ItemStack finalHelmet = helmet;
+
+        // Create and complete the profile asynchronously
+        CompletableFuture.supplyAsync(() -> {
+            PlayerProfile playerProfile = Bukkit.createProfile(playerName);
+            playerProfile.complete();
+
+            SkullMeta meta = (SkullMeta) finalHelmet.getItemMeta();
+            meta.setPlayerProfile(playerProfile);
+            finalHelmet.setItemMeta(meta);
+            finalHelmet.setDurability((short) 3);
+
+            return finalHelmet;
+        }).thenAccept(completedHelmet -> {
+            // Put the head on the mob on the main thread
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (entity.isValid() && !entity.isDead()) {
+                    entity.getEquipment().setHelmet(completedHelmet);
+                }
+            });
+        });
+    } // applyPlayerHeadAsync
 
     // ------------------------------------------------------------------------
     /**
      * Map from lower case shape name to {@link CreatureShape} instance.
-     *
+     * <p>
      * Use a LinkedHashMap to preserve the ordering defined in the configuration
      * file. That way earlier entries have precedence over later ones.
      */
